@@ -1,0 +1,13 @@
+services:
+  admin:
+    build: .
+    container_name: social-media-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist API keys outside the container
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - CONFIG_FILE=/app/data/.config.json

@@ -6,7 +6,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const CONFIG_FILE = path.join(__dirname, '.config.json');
+const CONFIG_FILE = process.env.CONFIG_FILE || path.join(__dirname, '.config.json');
+
+// Ensure config directory exists (needed for Docker volume mount)
+fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
 
 function loadConfig() {
   try {
