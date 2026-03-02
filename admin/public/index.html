@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Media API — Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --sidebar: 240px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    /* Sidebar */
+    .sidebar { width: var(--sidebar); }
+
+    /* Nav item */
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; border-radius: 8px; cursor: pointer;
+      color: #94a3b8; font-size: 14px; font-weight: 500;
+      transition: all .15s; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: #334155; color: #f1f5f9; }
+    .nav-item.active { background: #065f46; color: #6ee7b7; }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* Cards */
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+
+    /* Input */
+    .field {
+      width: 100%; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; padding: 10px 14px; color: #f1f5f9;
+      font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    .field:focus { border-color: #10b981; }
+    .field::placeholder { color: #475569; }
+    textarea.field { resize: vertical; min-height: 100px; font-family: 'Fira Code', monospace; font-size: 13px; }
+
+    /* Buttons */
+    .btn { padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+    .btn-primary { background: #10b981; color: #fff; }
+    .btn-primary:hover { background: #059669; }
+    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .btn-ghost { background: #334155; color: #cbd5e1; }
+    .btn-ghost:hover { background: #475569; color: #f1f5f9; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* Platform badges */
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .3px; }
+    .badge-tiktok { background: #111827; color: #22d3ee; border: 1px solid #22d3ee40; }
+    .badge-youtube { background: #1c1010; color: #f87171; border: 1px solid #f8717140; }
+    .badge-instagram { background: #1c0e1a; color: #f472b6; border: 1px solid #f472b640; }
+    .badge-twitter { background: #0c1829; color: #60a5fa; border: 1px solid #60a5fa40; }
+    .badge-linkedin { background: #0a1929; color: #38bdf8; border: 1px solid #38bdf840; }
+    .badge-facebook { background: #0d1829; color: #818cf8; border: 1px solid #818cf840; }
+    .badge-multi { background: #0a1a14; color: #34d399; border: 1px solid #34d39940; }
+    .badge-music { background: #1a0a29; color: #c084fc; border: 1px solid #c084fc40; }
+    .badge-whatsapp { background: #0a1a10; color: #4ade80; border: 1px solid #4ade8040; }
+    .badge-jobs { background: #1a1200; color: #fbbf24; border: 1px solid #fbbf2440; }
+    .badge-content { background: #1a0a0a; color: #fb923c; border: 1px solid #fb923c40; }
+
+    /* Scraper card */
+    .scraper-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+      padding: 18px; display: flex; flex-direction: column; gap: 12px;
+      transition: border-color .15s;
+    }
+    .scraper-card:hover { border-color: #4b5563; }
+
+    /* JSON viewer */
+    #json-output pre {
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      padding: 16px; font-size: 12px; line-height: 1.7; overflow: auto;
+      max-height: 450px; font-family: 'Fira Code', monospace;
+    }
+    .j-key { color: #a78bfa; }
+    .j-str { color: #86efac; }
+    .j-num { color: #fb923c; }
+    .j-bool { color: #60a5fa; }
+    .j-null { color: #64748b; }
+
+    /* Status badges */
+    .status-ok { background: #052e16; color: #4ade80; border: 1px solid #4ade8030; }
+    .status-err { background: #2d0c0c; color: #f87171; border: 1px solid #f8717130; }
+    .status-warn { background: #1c1200; color: #fbbf24; border: 1px solid #fbbf2430; }
+    .status-info { background: #0c1829; color: #60a5fa; border: 1px solid #60a5fa30; }
+
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #334155;
+      border-top-color: #10b981; border-radius: 50%;
+      animation: spin .7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Modal backdrop */
+    #runner-modal { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
+
+    /* Search highlight */
+    .highlight { background: #065f46; color: #6ee7b7; border-radius: 3px; padding: 0 2px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 12px 20px; font-size: 14px; color: #f1f5f9;
+      box-shadow: 0 10px 25px rgba(0,0,0,.4);
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s; pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex">
+
+  <!-- ───────── SIDEBAR ───────── -->
+  <aside class="sidebar fixed h-full bg-slate-800 border-r border-slate-700 flex flex-col z-20">
+    <!-- Logo -->
+    <div class="p-5 border-b border-slate-700">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-xl">🕸️</div>
+        <div>
+          <div class="font-bold text-white text-sm leading-tight">Content Factory</div>
+          <div class="text-xs text-slate-500">Social Media API Panel</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 p-3 space-y-1">
+      <button class="nav-item active" onclick="goPage('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="goPage('keys')">
+        <span class="icon">🔑</span> API Keys
+      </button>
+      <button class="nav-item" onclick="goPage('scrapers')">
+        <span class="icon">🔍</span> Scrapers Library
+      </button>
+    </nav>
+
+    <!-- Footer -->
+    <div class="p-4 border-t border-slate-700">
+      <div id="sidebar-status" class="flex items-center gap-2 text-xs text-slate-500">
+        <span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span>
+        <span>Not connected</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ───────── MAIN ───────── -->
+  <main class="flex-1 overflow-auto" style="margin-left: var(--sidebar)">
+
+    <!-- ─── PAGE: DASHBOARD ─── -->
+    <div id="page-dashboard" class="p-8 max-w-5xl">
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+        <p class="text-slate-400 text-sm mt-1">Manage API keys and test social media scrapers.</p>
+      </div>
+
+      <!-- Status card -->
+      <div id="dash-status-card" class="card mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div id="dash-dot" class="w-3 h-3 rounded-full bg-slate-600"></div>
+            <div>
+              <div id="dash-status-title" class="font-semibold text-slate-200">Apify not connected</div>
+              <div id="dash-status-sub" class="text-xs text-slate-500 mt-0.5">Add your Apify token to get started</div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="goPage('keys')">Configure Keys →</button>
+        </div>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="grid grid-cols-3 gap-4 mb-8">
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-emerald-400">26</div>
+          <div class="text-sm text-slate-400 mt-1">Featured Scrapers</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-violet-400">3,268</div>
+          <div class="text-sm text-slate-400 mt-1">Total APIs in Catalog</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-sky-400">10</div>
+          <div class="text-sm text-slate-400 mt-1">Platforms Covered</div>
+        </div>
+      </div>
+
+      <!-- Quick start -->
+      <div class="card">
+        <h2 class="font-semibold text-white mb-4">🚀 Quick Start</h2>
+        <ol class="space-y-3 text-sm text-slate-300">
+          <li class="flex gap-3">
+            <span class="w-6 h-6 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+            <span>Go to <button onclick="goPage('keys')" class="text-emerald-400 hover:underline">API Keys</button> and paste your <strong class="text-white">Apify token</strong>. Get it at <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-emerald-400 hover:underline">console.apify.com → Settings → Integrations</a>.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-6 h-6 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+            <span>Click <strong class="text-white">Validate Token</strong> to verify the connection.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-6 h-6 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+            <span>Go to <button onclick="goPage('scrapers')" class="text-emerald-400 hover:underline">Scrapers Library</button>, pick any scraper, click <strong class="text-white">Test</strong>, edit the input JSON, and run it.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-6 h-6 rounded-full bg-emerald-900 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+            <span>Results return as <strong class="text-white">JSON</strong> — copy or download and integrate into your content factory pipeline.</span>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: API KEYS ─── -->
+    <div id="page-keys" class="p-8 max-w-2xl hidden">
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-white">API Keys</h1>
+        <p class="text-slate-400 text-sm mt-1">Keys are stored locally on the server. Never committed to git.</p>
+      </div>
+
+      <!-- APIFY TOKEN -->
+      <div class="card mb-4">
+        <div class="flex items-start justify-between mb-1">
+          <label class="font-semibold text-white text-sm">Apify API Token</label>
+          <span class="badge badge-multi">Required</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-3">
+          💡 Get it at <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-emerald-400 hover:underline">console.apify.com → Settings → Integrations</a> → "Personal API tokens" → Create token.
+          This token gives access to all 3,268 Apify scrapers.
+        </p>
+        <div class="flex gap-2">
+          <input id="input-apify" type="password" class="field flex-1" placeholder="apify_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+          <button onclick="toggleVis('input-apify', this)" class="btn btn-ghost btn-sm whitespace-nowrap">👁 Show</button>
+        </div>
+        <div class="flex items-center gap-2 mt-3">
+          <button onclick="saveKeys()" class="btn btn-primary btn-sm">💾 Save</button>
+          <button onclick="validateToken()" class="btn btn-ghost btn-sm" id="btn-validate">✅ Validate Token</button>
+          <div id="validate-result" class="text-xs text-slate-400"></div>
+        </div>
+        <div id="apify-saved" class="mt-3 text-xs text-slate-500 hidden"></div>
+      </div>
+
+      <!-- OpenAI (optional) -->
+      <div class="card mb-4">
+        <div class="flex items-start justify-between mb-1">
+          <label class="font-semibold text-white text-sm">OpenAI API Key</label>
+          <span class="badge badge-content">Optional</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-3">
+          💡 Needed for AI-powered actors (Podcast Ideas Creator, Ad Copywriter, etc.).
+          Get at <a href="https://platform.openai.com/api-keys" target="_blank" class="text-emerald-400 hover:underline">platform.openai.com/api-keys</a>.
+          Pass as <code class="bg-slate-700 px-1 rounded text="xs">openaiApiKey</code> in the actor's input JSON.
+        </p>
+        <div class="flex gap-2">
+          <input id="input-openai" type="password" class="field flex-1" placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+          <button onclick="toggleVis('input-openai', this)" class="btn btn-ghost btn-sm whitespace-nowrap">👁 Show</button>
+        </div>
+        <div class="mt-3">
+          <button onclick="saveKeys()" class="btn btn-ghost btn-sm">💾 Save</button>
+        </div>
+        <div id="openai-saved" class="mt-3 text-xs text-slate-500 hidden"></div>
+      </div>
+
+      <!-- Anthropic (optional) -->
+      <div class="card mb-4">
+        <div class="flex items-start justify-between mb-1">
+          <label class="font-semibold text-white text-sm">Anthropic API Key</label>
+          <span class="badge badge-content">Optional</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-3">
+          💡 Alternative to OpenAI for AI content generation actors.
+          Get at <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-emerald-400 hover:underline">console.anthropic.com/settings/keys</a>.
+        </p>
+        <div class="flex gap-2">
+          <input id="input-anthropic" type="password" class="field flex-1" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+          <button onclick="toggleVis('input-anthropic', this)" class="btn btn-ghost btn-sm whitespace-nowrap">👁 Show</button>
+        </div>
+        <div class="mt-3">
+          <button onclick="saveKeys()" class="btn btn-ghost btn-sm">💾 Save</button>
+        </div>
+      </div>
+
+      <!-- Current saved keys -->
+      <div class="card">
+        <h3 class="font-semibold text-white text-sm mb-3">Saved keys</h3>
+        <div id="saved-keys-list" class="space-y-2 text-sm text-slate-400">
+          <div class="text-slate-600">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: SCRAPERS ─── -->
+    <div id="page-scrapers" class="p-8 hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-white">Scrapers Library</h1>
+        <p class="text-slate-400 text-sm mt-1">26 featured scrapers. Click <strong class="text-white">Test</strong> to run any one.</p>
+      </div>
+
+      <!-- Search + Filter -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <input id="scraper-search" type="text" class="field" style="max-width:280px"
+          placeholder="🔍 Search scrapers..." oninput="filterScrapers()" />
+        <div id="platform-filters" class="flex gap-2 flex-wrap">
+          <button onclick="setFilter('all')" class="btn btn-primary btn-sm filter-btn" data-filter="all">All</button>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div id="scrapers-grid" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
+    </div>
+
+  </main><!-- /main -->
+
+  <!-- ───────── TEST RUNNER MODAL ───────── -->
+  <div id="runner-modal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-12 pb-8 px-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-full overflow-auto shadow-2xl">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between p-5 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
+        <div>
+          <div id="modal-platform-badge" class="mb-1"></div>
+          <div id="modal-title" class="font-bold text-white text-lg"></div>
+          <div id="modal-actor-id" class="text-xs text-slate-500 font-mono mt-0.5"></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="modal-apify-link" href="#" target="_blank" class="btn btn-ghost btn-sm">📄 Apify Docs</a>
+          <button onclick="closeRunner()" class="btn btn-ghost btn-sm">✕ Close</button>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-5">
+        <!-- Description -->
+        <div id="modal-description" class="text-sm text-slate-400"></div>
+
+        <!-- Input JSON editor -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-semibold text-slate-300">Input JSON</label>
+            <div class="flex gap-2">
+              <button onclick="formatJson()" class="btn btn-ghost btn-sm">✨ Format</button>
+              <button onclick="resetInput()" class="btn btn-ghost btn-sm">↩ Reset</button>
+            </div>
+          </div>
+          <textarea id="modal-input" class="field w-full" rows="12" spellcheck="false"></textarea>
+          <p class="text-xs text-slate-500 mt-2">
+            ⚠️ Input schema varies by actor. Check the Apify Docs link above for exact fields.
+            The JSON above is a sensible starting template — edit as needed.
+          </p>
+        </div>
+
+        <!-- Run button -->
+        <div class="flex items-center gap-3">
+          <button id="btn-run" onclick="runActor()" class="btn btn-primary">
+            ▶ Run Scraper
+          </button>
+          <div id="run-spinner" class="hidden items-center gap-2 text-sm text-slate-400">
+            <span class="spinner"></span>
+            <span id="run-status-text">Starting run...</span>
+          </div>
+          <div id="run-error" class="hidden text-sm text-red-400"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="run-results" class="hidden space-y-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span id="result-status-badge" class="badge px-3 py-1"></span>
+            <span id="result-duration" class="text-xs text-slate-500"></span>
+            <span id="result-count" class="text-xs text-slate-500"></span>
+          </div>
+
+          <div id="result-message" class="hidden text-sm text-slate-400 bg-slate-900 rounded-lg p-3"></div>
+
+          <div id="result-console-link" class="hidden">
+            <a id="result-console-a" href="#" target="_blank"
+              class="text-xs text-emerald-400 hover:underline">🔗 Open in Apify Console →</a>
+          </div>
+
+          <div id="json-output" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-slate-300">Results</span>
+              <div class="flex gap-2">
+                <button onclick="copyResults()" class="btn btn-ghost btn-sm">📋 Copy JSON</button>
+                <button onclick="downloadResults()" class="btn btn-ghost btn-sm">⬇ Download</button>
+              </div>
+            </div>
+            <pre id="json-pre"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- ───────── JAVASCRIPT ───────── -->
+  <script>
+  // ─── DATA: SCRAPERS ───
+  const SCRAPERS = [
+    // TikTok
+    {
+      id: 'tiktok-video',
+      name: 'TikTok Video Downloader',
+      platform: 'TikTok',
+      actorId: 'nextapi/tiktok-video-downloader',
+      apifyUrl: 'https://apify.com/nextapi/tiktok-video-downloader',
+      description: 'Download TikTok videos without watermarks. Bulk processing, HD quality.',
+      tags: ['download', 'video', 'bulk', 'watermark-free'],
+      defaultInput: {
+        "startUrls": [
+          { "url": "https://www.tiktok.com/@tiktok/video/6829267836783971589" }
+        ]
+      }
+    },
+    {
+      id: 'tiktok-explorer',
+      name: 'TikTok Explorer (All-in-One)',
+      platform: 'TikTok',
+      actorId: 'jupri/tiktok',
+      apifyUrl: 'https://apify.com/jupri/tiktok',
+      description: 'All-in-One TikTok scraper — search videos by hashtag, keyword, profile.',
+      tags: ['search', 'hashtag', 'trending', 'profiles'],
+      defaultInput: {
+        "hashtags": ["#viral", "#trending"],
+        "maxItems": 20
+      }
+    },
+    {
+      id: 'tiktok-audio',
+      name: 'TikTok Video & Audio (MP3)',
+      platform: 'TikTok',
+      actorId: 'scrapearchitect/tiktok-video-audio-mp3-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/tiktok-video-audio-mp3-downloader',
+      description: 'Download HD videos (1080p) without watermark + extract MP3 audio. Engagement metrics included.',
+      tags: ['download', 'mp3', 'audio', 'bulk'],
+      defaultInput: {
+        "urls": [
+          "https://www.tiktok.com/@tiktok/video/6829267836783971589"
+        ]
+      }
+    },
+    {
+      id: 'tiktok-live',
+      name: 'TikTok Live Recorder',
+      platform: 'TikTok',
+      actorId: 'nextapi/tiktok-live-recorder',
+      apifyUrl: 'https://apify.com/nextapi/tiktok-live-recorder',
+      description: 'Record TikTok Live streams automatically for archiving and content reuse.',
+      tags: ['live', 'record', 'stream'],
+      defaultInput: {
+        "username": "tiktok",
+        "maxDurationSeconds": 60
+      }
+    },
+
+    // YouTube
+    {
+      id: 'youtube-transcript',
+      name: 'YouTube Transcript + Timestamps',
+      platform: 'YouTube',
+      actorId: 'vulnv/youtube-transcript-downloader-timestamp-export',
+      apifyUrl: 'https://apify.com/vulnv/youtube-transcript-downloader-timestamp-export',
+      description: 'Extract full transcripts with timestamps from YouTube videos. $0.5/1,000. Perfect for repurposing video content.',
+      tags: ['transcript', 'subtitles', 'text', 'timestamps'],
+      defaultInput: {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      }
+    },
+    {
+      id: 'youtube-audio',
+      name: 'YouTube Audio / MP3',
+      platform: 'YouTube',
+      actorId: 'scrapearchitect/youtube-audio-mp3-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/youtube-audio-mp3-downloader',
+      description: 'Convert any YouTube video/Short to MP3. Supports multiple languages and audio tracks.',
+      tags: ['mp3', 'audio', 'download', 'bulk'],
+      defaultInput: {
+        "urls": [
+          "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        ]
+      }
+    },
+    {
+      id: 'youtube-video',
+      name: 'YouTube Video Downloader (4K)',
+      platform: 'YouTube',
+      actorId: 'scrapearchitect/youtube-long-video-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/youtube-long-video-downloader',
+      description: 'Download long YouTube videos from 360p to 8K. Perfect for lectures, streams, documentaries.',
+      tags: ['download', 'video', '4k', 'bulk'],
+      defaultInput: {
+        "urls": [
+          "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        ],
+        "quality": "720p"
+      }
+    },
+    {
+      id: 'youtube-playlist',
+      name: 'YouTube Playlist Extractor',
+      platform: 'YouTube',
+      actorId: 'dz_omar/youtube-playlist-extractor',
+      apifyUrl: 'https://apify.com/dz_omar/youtube-playlist-extractor',
+      description: 'Extract all video details from a YouTube playlist: titles, durations, thumbnails, channel info.',
+      tags: ['playlist', 'metadata', 'bulk'],
+      defaultInput: {
+        "playlistUrl": "https://www.youtube.com/playlist?list=PLbpi6ZahtOH6Ar_3QPy71yM4kJmkNFnQY"
+      }
+    },
+    {
+      id: 'youtube-comments',
+      name: 'YouTube Channel Comments',
+      platform: 'YouTube',
+      actorId: 'n.nobar/youtube-channel-comment-collector',
+      apifyUrl: 'https://apify.com/n.nobar/youtube-channel-comment-collector',
+      description: 'Collect recent comments from latest N videos on any public YouTube channel. Great for audience research.',
+      tags: ['comments', 'audience', 'research'],
+      defaultInput: {
+        "channelUrl": "https://www.youtube.com/@MrBeast",
+        "videosCount": 5
+      }
+    },
+
+    // Instagram
+    {
+      id: 'instagram-reels',
+      name: 'Instagram Reels Downloader',
+      platform: 'Instagram',
+      actorId: 'damilo/instagram-reels-downloader-apify',
+      apifyUrl: 'https://apify.com/damilo/instagram-reels-downloader-apify',
+      description: 'Fast Reels downloader. Saves video.mp4 + thumbnail + description. Supports S3/MinIO storage.',
+      tags: ['reels', 'download', 'video', 'bulk'],
+      defaultInput: {
+        "urls": [
+          "https://www.instagram.com/reel/CuPFBIFJCOl/"
+        ]
+      }
+    },
+    {
+      id: 'instagram-post-video',
+      name: 'Instagram Post & Video Scraper',
+      platform: 'Instagram',
+      actorId: 'scrapearchitect/instagram-post-video-scraper-video-post-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/instagram-post-video-scraper-video-post-downloader',
+      description: 'Download HD videos + extract engagement metrics, captions, hashtags from any Instagram post.',
+      tags: ['download', 'video', 'metrics', 'captions'],
+      defaultInput: {
+        "urls": [
+          "https://www.instagram.com/p/CuPFBIFJCOl/"
+        ]
+      }
+    },
+    {
+      id: 'instagram-image',
+      name: 'Instagram Post & Image Scraper',
+      platform: 'Instagram',
+      actorId: 'scrapearchitect/instagram-post-image-scraper-image-post-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/instagram-post-image-scraper-image-post-downloader',
+      description: 'Scrape + download HD images from any Instagram post. Full metadata: likes, comments, captions, hashtags.',
+      tags: ['images', 'download', 'metadata'],
+      defaultInput: {
+        "urls": [
+          "https://www.instagram.com/p/CuPFBIFJCOl/"
+        ]
+      }
+    },
+
+    // Twitter/X
+    {
+      id: 'twitter-video',
+      name: 'Twitter/X Video Downloader',
+      platform: 'Twitter/X',
+      actorId: 'scrapearchitect/x-twitter-video-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/x-twitter-video-downloader',
+      description: 'Download Twitter/X videos & images. Bulk downloads, high-quality MP4s. No login required.',
+      tags: ['download', 'video', 'bulk', 'no-login'],
+      defaultInput: {
+        "urls": [
+          "https://twitter.com/NASA/status/1234567890"
+        ]
+      }
+    },
+
+    // LinkedIn
+    {
+      id: 'linkedin-profile',
+      name: 'LinkedIn Profile Scraper',
+      platform: 'LinkedIn',
+      actorId: 'dataweave/linkedin-profile-scraper',
+      apifyUrl: 'https://apify.com/dataweave/linkedin-profile-scraper',
+      description: '$2/1,000 profiles. No cookies needed. 99% success rate. Full work history, education, skills, certifications.',
+      tags: ['profiles', 'b2b', 'no-cookies', 'contacts'],
+      defaultInput: {
+        "profileUrls": [
+          "https://www.linkedin.com/in/williamhgates/"
+        ]
+      }
+    },
+    {
+      id: 'linkedin-posts',
+      name: 'LinkedIn Search Posts',
+      platform: 'LinkedIn',
+      actorId: 'scary_good_apis/linkedin-search-posts',
+      apifyUrl: 'https://apify.com/scary_good_apis/linkedin-search-posts',
+      description: 'Search LinkedIn posts by exact keywords and filters. No cookies, no account risk.',
+      tags: ['posts', 'search', 'no-cookies', 'content'],
+      defaultInput: {
+        "searchQuery": "content marketing AI 2025",
+        "maxResults": 20
+      }
+    },
+    {
+      id: 'linkedin-profiles-search',
+      name: 'LinkedIn People Search',
+      platform: 'LinkedIn',
+      actorId: 'prog-party/linkedin-profiles',
+      apifyUrl: 'https://apify.com/prog-party/linkedin-profiles',
+      description: 'Search for LinkedIn profiles by person name. Great for finding leads and influencers.',
+      tags: ['search', 'people', 'leads'],
+      defaultInput: {
+        "query": "John Doe CEO"
+      }
+    },
+    {
+      id: 'linkedin-company',
+      name: 'LinkedIn Company Finder',
+      platform: 'LinkedIn',
+      actorId: 'future_creator/linkedin-company-url-bulk-profile-finder',
+      apifyUrl: 'https://apify.com/future_creator/linkedin-company-url-bulk-profile-finder',
+      description: 'Verify and collect LinkedIn company profile URLs in bulk. Perfect for B2B targeting.',
+      tags: ['companies', 'b2b', 'bulk'],
+      defaultInput: {
+        "companies": ["OpenAI", "Anthropic", "Google DeepMind"]
+      }
+    },
+
+    // Facebook
+    {
+      id: 'facebook-video',
+      name: 'Facebook Video Downloader',
+      platform: 'Facebook',
+      actorId: 'scrapearchitect/facebook-video-downloader',
+      apifyUrl: 'https://apify.com/scrapearchitect/facebook-video-downloader',
+      description: 'Extract metadata + HD video/audio downloads from Facebook. Bulk URLs supported.',
+      tags: ['download', 'video', 'bulk', 'metadata'],
+      defaultInput: {
+        "urls": [
+          "https://www.facebook.com/video/12345678"
+        ]
+      }
+    },
+
+    // Multi-platform
+    {
+      id: 'video-transcript',
+      name: 'Video Transcript (1000+ platforms)',
+      platform: 'Multi-platform',
+      actorId: 'agentx/video-transcript',
+      apifyUrl: 'https://apify.com/agentx/video-transcript',
+      description: 'Convert videos to text transcripts. YouTube, TikTok, Instagram + 1,000 more platforms. Translates to 100+ languages.',
+      tags: ['transcript', 'text', 'multilingual', 'universal'],
+      defaultInput: {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "language": "en"
+      }
+    },
+    {
+      id: 'all-video',
+      name: 'All Video Downloader (1000+ platforms)',
+      platform: 'Multi-platform',
+      actorId: 'agentx/all-video-scraper',
+      apifyUrl: 'https://apify.com/agentx/all-video-scraper',
+      description: 'Download videos from 1,000+ platforms. Watermark-free, HD/4K. 99.9% success rate.',
+      tags: ['download', 'universal', '4k', 'watermark-free'],
+      defaultInput: {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      }
+    },
+    {
+      id: '4k-video',
+      name: '4K Video Downloader',
+      platform: 'Multi-platform',
+      actorId: 'nextapi/4k-video-downloader',
+      apifyUrl: 'https://apify.com/nextapi/4k-video-downloader',
+      description: 'Download high-quality 4K videos from YouTube, Vimeo, and other platforms.',
+      tags: ['download', '4k', 'hd'],
+      defaultInput: {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      }
+    },
+
+    // Music
+    {
+      id: 'spotify-album',
+      name: 'Spotify Album Scraper',
+      platform: 'Music',
+      actorId: 'scrapearchitect/spotify-album-scraper',
+      apifyUrl: 'https://apify.com/scrapearchitect/spotify-album-scraper',
+      description: 'Extract Spotify album data: track info, artist details, market availability, release dates.',
+      tags: ['spotify', 'music', 'metadata'],
+      defaultInput: {
+        "url": "https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy"
+      }
+    },
+    {
+      id: 'soundcloud',
+      name: 'SoundCloud Tracks Search',
+      platform: 'Music',
+      actorId: 'easyapi/soundcloud-tracks-search-scraper',
+      apifyUrl: 'https://apify.com/easyapi/soundcloud-tracks-search-scraper',
+      description: 'Search SoundCloud and extract track data: title, artist, play counts, likes, download links.',
+      tags: ['soundcloud', 'music', 'search'],
+      defaultInput: {
+        "search": "lo-fi hip hop"
+      }
+    },
+    {
+      id: 'apple-music',
+      name: 'Apple Music Track Downloader',
+      platform: 'Music',
+      actorId: 'easyapi/apple-music-track-downloader',
+      apifyUrl: 'https://apify.com/easyapi/apple-music-track-downloader',
+      description: 'Download and convert Apple Music tracks to audio files. Parallel processing, metadata preserved.',
+      tags: ['apple music', 'download', 'audio'],
+      defaultInput: {
+        "url": "https://music.apple.com/us/album/blinding-lights/1489498474?i=1489498476"
+      }
+    },
+
+    // Other
+    {
+      id: 'whatsapp',
+      name: 'WhatsApp Number Validator',
+      platform: 'WhatsApp',
+      actorId: 'thinkerpro/whatsapp-number-validator',
+      apifyUrl: 'https://apify.com/thinkerpro/whatsapp-number-validator',
+      description: 'Validate whether phone numbers are registered on WhatsApp. Essential for marketing campaigns.',
+      tags: ['validate', 'phone', 'marketing'],
+      defaultInput: {
+        "phoneNumbers": ["+14155552671", "+442071838750"]
+      }
+    },
+    {
+      id: 'podcast-ideas',
+      name: 'Podcast Episode Ideas Creator',
+      platform: 'Content AI',
+      actorId: 'powerai/podcast-episode-ideas-creator',
+      apifyUrl: 'https://apify.com/powerai/podcast-episode-ideas-creator',
+      description: 'AI-powered podcast episode ideas. Analyzes your theme and audience to generate comprehensive episode plans.',
+      tags: ['ai', 'podcast', 'ideas', 'content'],
+      defaultInput: {
+        "podcastTheme": "digital marketing and content creation",
+        "targetAudience": "content creators and marketers",
+        "episodesCount": 5
+      }
+    }
+  ];
+
+  // ─── STATE ───
+  let currentActor = null;
+  let lastResults = null;
+  let activeFilter = 'all';
+  let defaultInputs = {};
+
+  // Store default inputs
+  SCRAPERS.forEach(s => { defaultInputs[s.id] = s.defaultInput; });
+
+  // ─── NAVIGATION ───
+  function goPage(name) {
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`page-${name}`).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const btns = document.querySelectorAll('.nav-item');
+    btns.forEach(b => {
+      if (b.textContent.toLowerCase().includes(name === 'keys' ? 'api' : name === 'scrapers' ? 'scraper' : name)) {
+        b.classList.add('active');
+      }
+    });
+    if (name === 'keys') loadSavedKeys();
+    if (name === 'scrapers') renderScrapers();
+    if (name === 'dashboard') checkDashStatus();
+  }
+
+  // ─── DASHBOARD ───
+  async function checkDashStatus() {
+    try {
+      const cfg = await fetch('/api/config').then(r => r.json());
+      if (!cfg.hasApify) return;
+
+      const val = await fetch('/api/validate', { method: 'POST' }).then(r => r.json());
+      const dot = document.getElementById('dash-dot');
+      const title = document.getElementById('dash-status-title');
+      const sub = document.getElementById('dash-status-sub');
+      const sidebar = document.getElementById('sidebar-status');
+
+      if (val.valid) {
+        dot.className = 'w-3 h-3 rounded-full bg-emerald-500';
+        title.textContent = `Apify connected — @${val.username}`;
+        sub.textContent = `Plan: ${val.plan || 'free'} · ${val.email}`;
+        sidebar.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-400">@${val.username}</span>`;
+      } else {
+        dot.className = 'w-3 h-3 rounded-full bg-red-500';
+        title.textContent = 'Apify token invalid';
+        sub.textContent = val.message;
+      }
+    } catch (e) {}
+  }
+
+  // ─── API KEYS ───
+  async function loadSavedKeys() {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    const list = document.getElementById('saved-keys-list');
+
+    const keys = cfg.keys || {};
+    if (!Object.keys(keys).length) {
+      list.innerHTML = '<div class="text-slate-600 text-xs">No keys saved yet.</div>';
+      return;
+    }
+
+    list.innerHTML = Object.entries(keys).map(([k, v]) => `
+      <div class="flex items-center justify-between bg-slate-900 rounded-lg px-3 py-2">
+        <div>
+          <span class="font-mono text-xs text-slate-300">${k}</span>
+          <span class="ml-2 text-slate-600 text-xs font-mono">${v}</span>
+        </div>
+        <button onclick="deleteKey('${k}')" class="text-xs text-red-400 hover:text-red-300">✕</button>
+      </div>
+    `).join('');
+  }
+
+  async function saveKeys() {
+    const keys = {};
+    const apify = document.getElementById('input-apify').value.trim();
+    const openai = document.getElementById('input-openai').value.trim();
+    const anthropic = document.getElementById('input-anthropic').value.trim();
+
+    if (apify) keys.APIFY_TOKEN = apify;
+    if (openai) keys.OPENAI_API_KEY = openai;
+    if (anthropic) keys.ANTHROPIC_API_KEY = anthropic;
+
+    if (!Object.keys(keys).length) {
+      toast('⚠️ No keys to save — fill in at least one field');
+      return;
+    }
+
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys })
+    });
+
+    document.getElementById('input-apify').value = '';
+    document.getElementById('input-openai').value = '';
+    document.getElementById('input-anthropic').value = '';
+
+    toast('✅ Keys saved!');
+    loadSavedKeys();
+    checkDashStatus();
+  }
+
+  async function deleteKey(key) {
+    await fetch(`/api/config/${key}`, { method: 'DELETE' });
+    toast(`🗑️ Deleted ${key}`);
+    loadSavedKeys();
+  }
+
+  async function validateToken() {
+    const btn = document.getElementById('btn-validate');
+    const result = document.getElementById('validate-result');
+    btn.disabled = true;
+    btn.textContent = '⏳ Validating...';
+    result.textContent = '';
+
+    const data = await fetch('/api/validate', { method: 'POST' }).then(r => r.json());
+
+    btn.disabled = false;
+    btn.textContent = '✅ Validate Token';
+
+    if (data.valid) {
+      result.innerHTML = `<span class="text-emerald-400">✓ Valid — @${data.username} (${data.plan || 'free'})</span>`;
+      const sidebar = document.getElementById('sidebar-status');
+      sidebar.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-400">@${data.username}</span>`;
+    } else {
+      result.innerHTML = `<span class="text-red-400">✗ ${data.message}</span>`;
+    }
+  }
+
+  function toggleVis(id, btn) {
+    const el = document.getElementById(id);
+    if (el.type === 'password') {
+      el.type = 'text';
+      btn.textContent = '🙈 Hide';
+    } else {
+      el.type = 'password';
+      btn.textContent = '👁 Show';
+    }
+  }
+
+  // ─── SCRAPERS ───
+  const PLATFORM_COLORS = {
+    'TikTok': 'badge-tiktok',
+    'YouTube': 'badge-youtube',
+    'Instagram': 'badge-instagram',
+    'Twitter/X': 'badge-twitter',
+    'LinkedIn': 'badge-linkedin',
+    'Facebook': 'badge-facebook',
+    'Multi-platform': 'badge-multi',
+    'Music': 'badge-music',
+    'WhatsApp': 'badge-whatsapp',
+    'Jobs': 'badge-jobs',
+    'Content AI': 'badge-content',
+  };
+
+  const PLATFORM_ICONS = {
+    'TikTok': '🎵', 'YouTube': '▶️', 'Instagram': '📸', 'Twitter/X': '🐦',
+    'LinkedIn': '💼', 'Facebook': '📘', 'Multi-platform': '🌐',
+    'Music': '🎧', 'WhatsApp': '💬', 'Jobs': '💼', 'Content AI': '🤖',
+  };
+
+  function renderScrapers() {
+    const search = document.getElementById('scraper-search').value.toLowerCase();
+    const grid = document.getElementById('scrapers-grid');
+
+    // Build platform filters
+    const platforms = [...new Set(SCRAPERS.map(s => s.platform))];
+    const filterDiv = document.getElementById('platform-filters');
+    filterDiv.innerHTML = `<button onclick="setFilter('all')" class="btn btn-sm filter-btn ${activeFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-filter="all">All (${SCRAPERS.length})</button>` +
+      platforms.map(p => {
+        const count = SCRAPERS.filter(s => s.platform === p).length;
+        const active = activeFilter === p;
+        return `<button onclick="setFilter('${p}')" class="btn btn-sm filter-btn ${active ? 'btn-primary' : 'btn-ghost'}" data-filter="${p}">${PLATFORM_ICONS[p] || ''} ${p} (${count})</button>`;
+      }).join('');
+
+    const filtered = SCRAPERS.filter(s => {
+      const matchPlatform = activeFilter === 'all' || s.platform === activeFilter;
+      const matchSearch = !search || s.name.toLowerCase().includes(search) ||
+        s.description.toLowerCase().includes(search) ||
+        s.tags.some(t => t.includes(search));
+      return matchPlatform && matchSearch;
+    });
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="text-slate-500 text-sm col-span-full py-8 text-center">No scrapers found.</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(s => {
+      const badgeClass = PLATFORM_COLORS[s.platform] || 'badge-multi';
+      const icon = PLATFORM_ICONS[s.platform] || '🔧';
+      return `
+        <div class="scraper-card">
+          <div class="flex items-start justify-between gap-2">
+            <span class="badge ${badgeClass}">${icon} ${s.platform}</span>
+            <a href="${s.apifyUrl}" target="_blank" class="text-xs text-slate-500 hover:text-slate-300" title="Open on Apify">↗</a>
+          </div>
+          <div>
+            <div class="font-semibold text-white text-sm leading-tight">${s.name}</div>
+            <div class="text-xs text-slate-400 mt-1 leading-relaxed">${s.description}</div>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            ${s.tags.slice(0, 4).map(t => `<span class="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">${t}</span>`).join('')}
+          </div>
+          <button onclick="openRunner('${s.id}')" class="btn btn-primary btn-sm w-full mt-auto">▶ Test Scraper</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function setFilter(platform) {
+    activeFilter = platform;
+    renderScrapers();
+  }
+
+  function filterScrapers() {
+    renderScrapers();
+  }
+
+  // ─── TEST RUNNER ───
+  function openRunner(scraperId) {
+    const scraper = SCRAPERS.find(s => s.id === scraperId);
+    if (!scraper) return;
+
+    currentActor = scraper;
+    lastResults = null;
+
+    document.getElementById('modal-title').textContent = scraper.name;
+    document.getElementById('modal-actor-id').textContent = `Actor: ${scraper.actorId}`;
+    document.getElementById('modal-description').textContent = scraper.description;
+    document.getElementById('modal-apify-link').href = scraper.apifyUrl;
+
+    const badgeClass = PLATFORM_COLORS[scraper.platform] || 'badge-multi';
+    const icon = PLATFORM_ICONS[scraper.platform] || '🔧';
+    document.getElementById('modal-platform-badge').innerHTML =
+      `<span class="badge ${badgeClass}">${icon} ${scraper.platform}</span>`;
+
+    document.getElementById('modal-input').value = JSON.stringify(scraper.defaultInput, null, 2);
+
+    // Reset results
+    document.getElementById('run-results').classList.add('hidden');
+    document.getElementById('run-error').classList.add('hidden');
+    document.getElementById('run-spinner').classList.add('hidden');
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('json-output').classList.add('hidden');
+
+    document.getElementById('runner-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeRunner() {
+    document.getElementById('runner-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function formatJson() {
+    try {
+      const val = JSON.parse(document.getElementById('modal-input').value);
+      document.getElementById('modal-input').value = JSON.stringify(val, null, 2);
+    } catch (e) {
+      toast('⚠️ Invalid JSON — cannot format');
+    }
+  }
+
+  function resetInput() {
+    if (currentActor) {
+      document.getElementById('modal-input').value = JSON.stringify(currentActor.defaultInput, null, 2);
+    }
+  }
+
+  async function runActor() {
+    if (!currentActor) return;
+
+    let input;
+    try {
+      input = JSON.parse(document.getElementById('modal-input').value);
+    } catch (e) {
+      document.getElementById('run-error').textContent = '⚠️ Invalid JSON input: ' + e.message;
+      document.getElementById('run-error').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('btn-run').disabled = true;
+    document.getElementById('run-spinner').classList.remove('hidden');
+    document.getElementById('run-spinner').classList.add('flex');
+    document.getElementById('run-error').classList.add('hidden');
+    document.getElementById('run-results').classList.add('hidden');
+    document.getElementById('run-status-text').textContent = 'Starting run...';
+
+    // Update spinner text periodically
+    const msgs = ['Starting run...', 'Run queued...', 'Scraper is running...', 'Fetching data...', 'Almost there...'];
+    let msgIdx = 0;
+    const msgTimer = setInterval(() => {
+      msgIdx = (msgIdx + 1) % msgs.length;
+      const el = document.getElementById('run-status-text');
+      if (el) el.textContent = msgs[msgIdx];
+    }, 6000);
+
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actorId: currentActor.actorId, input })
+      });
+
+      clearInterval(msgTimer);
+      const data = await res.json();
+
+      document.getElementById('run-spinner').classList.add('hidden');
+      document.getElementById('btn-run').disabled = false;
+
+      if (!res.ok) {
+        document.getElementById('run-error').textContent = '❌ ' + (data.error || 'Unknown error');
+        document.getElementById('run-error').classList.remove('hidden');
+        return;
+      }
+
+      showResults(data);
+    } catch (err) {
+      clearInterval(msgTimer);
+      document.getElementById('run-spinner').classList.add('hidden');
+      document.getElementById('btn-run').disabled = false;
+      document.getElementById('run-error').textContent = '❌ Network error: ' + err.message;
+      document.getElementById('run-error').classList.remove('hidden');
+    }
+  }
+
+  function showResults(data) {
+    lastResults = data;
+
+    const results = document.getElementById('run-results');
+    results.classList.remove('hidden');
+
+    // Status badge
+    const badge = document.getElementById('result-status-badge');
+    if (data.success) {
+      badge.className = 'badge status-ok px-3 py-1';
+      badge.textContent = '✅ SUCCEEDED';
+    } else if (data.status === 'TIMEOUT') {
+      badge.className = 'badge status-warn px-3 py-1';
+      badge.textContent = '⏱ TIMEOUT';
+    } else {
+      badge.className = 'badge status-err px-3 py-1';
+      badge.textContent = `❌ ${data.status || 'FAILED'}`;
+    }
+
+    document.getElementById('result-duration').textContent = data.duration ? `⏱ ${data.duration}s` : '';
+    document.getElementById('result-count').textContent = data.count != null ? `📦 ${data.count} items` : '';
+
+    // Message
+    const msgEl = document.getElementById('result-message');
+    if (data.message) {
+      msgEl.textContent = data.message;
+      msgEl.classList.remove('hidden');
+    } else {
+      msgEl.classList.add('hidden');
+    }
+
+    // Console link
+    if (data.consoleUrl) {
+      document.getElementById('result-console-a').href = data.consoleUrl;
+      document.getElementById('result-console-link').classList.remove('hidden');
+    }
+
+    // JSON output
+    if (data.data) {
+      document.getElementById('json-pre').innerHTML = syntaxHighlight(data.data);
+      document.getElementById('json-output').classList.remove('hidden');
+    }
+  }
+
+  // ─── JSON SYNTAX HIGHLIGHT ───
+  function syntaxHighlight(json) {
+    if (typeof json !== 'string') {
+      json = JSON.stringify(json, null, 2);
+    }
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      match => {
+        let cls = 'j-num';
+        if (/^"/.test(match)) {
+          cls = /:$/.test(match) ? 'j-key' : 'j-str';
+        } else if (/true|false/.test(match)) {
+          cls = 'j-bool';
+        } else if (/null/.test(match)) {
+          cls = 'j-null';
+        }
+        return `<span class="${cls}">${match}</span>`;
+      }
+    );
+  }
+
+  // ─── COPY / DOWNLOAD ───
+  function copyResults() {
+    if (!lastResults?.data) return;
+    navigator.clipboard.writeText(JSON.stringify(lastResults.data, null, 2));
+    toast('📋 Copied to clipboard!');
+  }
+
+  function downloadResults() {
+    if (!lastResults?.data) return;
+    const blob = new Blob([JSON.stringify(lastResults.data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${currentActor?.id || 'results'}-${Date.now()}.json`;
+    a.click();
+    toast('⬇ Downloading...');
+  }
+
+  // ─── TOAST ───
+  function toast(msg, duration = 3000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('runner-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('runner-modal')) closeRunner();
+  });
+
+  // Escape key closes modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeRunner();
+  });
+
+  // ─── INIT ───
+  checkDashStatus();
+  </script>
+</body>
+</html>
